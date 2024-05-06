@@ -1,4 +1,4 @@
-#include <interpolate.h>
+#include "include/interpolate.h"
 
 char **get_interpolations(char *str, int *n_matches) {
   regex_t regex;

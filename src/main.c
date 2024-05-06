@@ -1,5 +1,5 @@
-#include <file.h>
-#include <interpolate.h>
+#include "include/file.h"
+#include "include/interpolate.h"
 
 int main(int argc, char **argv) {
   if (argc != 2) {

@@ -1,4 +1,4 @@
-#include <file.h>
+#include "include/file.h"
 
 char *read_file(char *path) {
   FILE *file = fopen(path, "r");
