@@ -1,0 +1,24 @@
+name: CI/CD for Interpolator
+
+on:
+  push:
+    branches:
+      - main
+  worflow_call:
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    - name: Build code
+      uses: devcontainers/ci@v0.3
+      with:
+        runCmd: ./build
+    - name: Create archive
+      run: |
+        mkdir -p release
+        tar -czf release/interpolator.$GITHUB_REF_NAME.tar.gz out/*
