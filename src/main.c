@@ -3,54 +3,83 @@
 #include <string.h>
 #include <unistd.h>
 
-#define DELIMITER_SIZE 3 // ${}
+#define MAX_VAR_NAME 256
+#define MAX_INTERPOLATED 1024
 
-int main(int argc, char **argv) {
-    FILE *input;
-    char buffer[1024];
-    char *token;
-    char *label;
-    char *value;
-    size_t delimiter_size = DELIMITER_SIZE;
-
-    if (argc == 1) {
-        // No command line argument, read from stdin
-        input = stdin;
-    } else if (argc == 2) {
-        // One command line argument, read from file
-        input = fopen(argv[1], "r");
-        if (input == NULL) {
-            perror("Error opening file");
-            return 1;
-        }
-    } else {
-        fprintf(stderr, "Usage: %s [file]\n", argv[0]);
-        return 1;
+char *getenv_var(const char *var_name)
+{
+    char *value = getenv(var_name);
+    if (value == NULL)
+    {
+        return ""; // or some other default value
     }
+    return value;
+}
 
-    while (fgets(buffer, sizeof(buffer), input)!= NULL) {
-        token = strtok(buffer, " \t\n");
-        while (token!= NULL) {
-            if (strncmp(token, "${", delimiter_size) == 0 && strlen(token) > delimiter_size) {
-                label = token + delimiter_size;
-                value = getenv(label);
-                if (value!= NULL) {
-                    printf("%s", value);
-                } else {
-                    printf("%s", token);
-                }
-            } else {
-                printf("%s", token);
+char *interpolate(const char *input)
+{
+    char *interpolated = malloc(MAX_INTERPOLATED);
+    char *p = input;
+    char *q = interpolated;
+    while (*p != '\0')
+    {
+        if (*p == '$' && *(p + 1) == '{')
+        {
+            p += 2; // skip ${
+            char var_name[MAX_VAR_NAME];
+            int i = 0;
+            while (*p != '}' && i < MAX_VAR_NAME)
+            {
+                var_name[i] = *p;
+                p++;
+                i++;
             }
-            token = strtok(NULL, " \t\n");
-            printf(" ");
+            var_name[i] = '\0';
+            if (*p != '}')
+            {
+                fprintf(stderr, "Error: invalid variable syntax\n");
+                exit(1);
+            }
+            p++; // skip }
+            char *value = getenv_var(var_name);
+            while (*value != '\0')
+            {
+                *q++ = *value++;
+            }
         }
-        printf("\n");
+        else
+        {
+            *q++ = *p++;
+        }
+    }
+    *q = '\0';
+    return interpolated;
+}
+
+int main(int argc, char *argv[])
+{
+    FILE *input_file = stdin;
+    if (argc > 1)
+    {
+        input_file = fopen(argv[1], "r");
+        if (input_file == NULL)
+        {
+            fprintf(stderr, "Error: unable to open file %s\n", argv[1]);
+            exit(1);
+        }
     }
 
-    if (argc == 2) {
-        fclose(input);
+    char buffer[1024];
+    while (fgets(buffer, 1024, input_file) != NULL)
+    {
+        char *interpolated = interpolate(buffer);
+        printf("%s", interpolated);
+        free(interpolated);
     }
 
+    if (argc > 1)
+    {
+        fclose(input_file);
+    }
     return 0;
 }

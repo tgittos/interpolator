@@ -1,0 +1,39 @@
+name: CI/CD for Interpolator
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+
+jobs:
+  steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+    - name: Build code
+      uses: devcontainers/ci@v0.3
+      with:
+        runCmd: ./build
+    - name: Create archive
+        run: |
+          mkdir -p release
+          tar -czf release/interpolator.$GITHUB_REF_NAME.tar.gz out/*
+      - name: Upload release
+        uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: release/interpolator.$GITHUB_REF_NAME.tar.gz
+      - name: Create release
+        uses: actions/create-release@v2
+        with:
+          tag: $GITHUB_REF_NAME
+          release-name: $GITHUB_REF_NAME
+          draft: false
+          prerelease: false
+      - name: Upload release artifact
+        uses: actions/upload-release-asset@v2
+        with:
+          upload-url: ${{ steps.create-release.outputs.upload_url }}
+          asset-path: release/interpolator.$GITHUB_REF_NAME.tar.gz
+          asset-name: interpolator.${GITHUB_REF_NAME}.tar.gz

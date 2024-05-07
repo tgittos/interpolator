@@ -1,0 +1,3 @@
+#! /bin/sh
+
+cosmocc -o out/interpolator src/main.c
