@@ -1,39 +1,56 @@
-#include "include/file.h"
-#include "include/interpolate.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#define DELIMITER_SIZE 3 // ${}
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    fprintf(stderr, "Usage: %s <file>\n", argv[0]);
-    exit(1);
-  }
+    FILE *input;
+    char buffer[1024];
+    char *token;
+    char *label;
+    char *value;
+    size_t delimiter_size = DELIMITER_SIZE;
 
-  // open the file and read its contents
-  char *path = argv[1];
-  char *contents = read_file
-
-  // fetch all interpolations from the contents
-  char *interpolations = get_interpolations(contents, &n_interpolations);
-
-  // loop through the interpolates and get their values from the environment
-  // and store them in a dictionary
-  char **values = NULL;
-  for (int i = 0; i < n_interpolations; i++) {
-    char *interpolation = interpolations[i];
-    char *value = getenv(interpolation + 2);
-    if (value == NULL) {
-      fprintf(stderr, "Environment variable %s not set\n", interpolation + 2);
-      exit(1);
+    if (argc == 1) {
+        // No command line argument, read from stdin
+        input = stdin;
+    } else if (argc == 2) {
+        // One command line argument, read from file
+        input = fopen(argv[1], "r");
+        if (input == NULL) {
+            perror("Error opening file");
+            return 1;
+        }
+    } else {
+        fprintf(stderr, "Usage: %s [file]\n", argv[0]);
+        return 1;
     }
-    values = realloc(values, (i + 2) * sizeof(char *));
-    values[i] = interpolation;
-    values[i + 1] = value;
-  }
 
-  // interpolate in the values from the environment dictionary
-  char *result = interpolate(contents, interpolations, n_interpolations, values);
+    while (fgets(buffer, sizeof(buffer), input)!= NULL) {
+        token = strtok(buffer, " \t\n");
+        while (token!= NULL) {
+            if (strncmp(token, "${", delimiter_size) == 0 && strlen(token) > delimiter_size) {
+                label = token + delimiter_size;
+                value = getenv(label);
+                if (value!= NULL) {
+                    printf("%s", value);
+                } else {
+                    printf("%s", token);
+                }
+            } else {
+                printf("%s", token);
+            }
+            token = strtok(NULL, " \t\n");
+            printf(" ");
+        }
+        printf("\n");
+    }
 
-  // output the result to stdout
-  write_file(stdout, result);
+    if (argc == 2) {
+        fclose(input);
+    }
 
-  return 0;
+    return 0;
 }
